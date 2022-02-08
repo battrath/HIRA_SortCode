@@ -1,6 +1,9 @@
 # HIRA_SortCode
+
+## Major Changes
 The major changes to the code is the new readBeams class which is used to generate histograms for all secondary and residual beam combinations without having to individually define them in the histo_sort and histo_read classes. In addition it provides an indexing system to fill in the histograms in such a way that if statements are not required to fill in different histograms. The RingCounter class, used to match CsI and Si hits, has been changed from a subclass of hira to a separate class which takes the output of hira as arguments. In addition changes have been made to the CRDC calibrations in the S800 class, the correl2 class.
 
+## Before Sorting
 ```
 make
 ./sort OptionFile (optional) RunNumber (optional)
