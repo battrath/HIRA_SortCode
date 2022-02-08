@@ -1,6 +1,11 @@
 # HIRA_SortCode
 The major changes to the code is the new readBeams class which is used to generate histograms for all secondary and residual beam combinations without having to individually define them in the histo_sort and histo_read classes. In addition it provides an indexing system to fill in the histograms in such a way that if statements are not required to fill in different histograms. The RingCounter class, used to match CsI and Si hits, has been changed from a subclass of hira to a separate class which takes the output of hira as arguments. In addition changes have been made to the CRDC calibrations in the S800 class, the correl2 class.
 
+```
+make
+./sort OptionFile (optional) RunNumber (optional)
+```
+
 Running the Code
  - The locations of all input files (calibrations/channel maps etc.) and other variables (target thickness/distance etc.) have been removed from the individual codes and instead should be defined in an input file "options.in (default name)". The code reads this file and sets all the input file locations and variables. 
  - Also contained within this file should be the name of a text file containing the numbers of all runs to be sorted (numbers.beam)
