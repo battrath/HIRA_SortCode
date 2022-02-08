@@ -1,9 +1,26 @@
 # HIRA_SortCode
 
 ## Major Changes
-The major changes to the code is the new readBeams class which is used to generate histograms for all secondary and residual beam combinations without having to individually define them in the histo_sort and histo_read classes. In addition it provides an indexing system to fill in the histograms in such a way that if statements are not required to fill in different histograms. The RingCounter class, used to match CsI and Si hits, has been changed from a subclass of hira to a separate class which takes the output of hira as arguments. In addition changes have been made to the CRDC calibrations in the S800 class, the correl2 class.
+The readBeams class has been created and is used to generate histograms in the histo_sort and histo_read classes for all secondary and residual beam combinations. In addition it provides an indexing system to fill in the histograms in the main code. The RingCounter class, used to match CsI and Si hits, has been changed from a subclass of HIRA to a separate class which takes the output of hira as arguments. In addition changes have been made to the CRDC calibrations in the S800 class and the correl2 class. Filenames and parameters previously hardcoded into the code have beeen removed and are instead included in a single options file which must be prepared before running codes.
 
 ## Before Sorting
+- An options file must be created which includes experimental variables (target thickness, brho etc.) as well any calibration or configuration files. An example file (options.in) has been included here, with the definitions defined in runOptions.h.
+- A list containing the run list should be created and included inthe options file
+- A directory "Beams" must exist and contain a number of text files equal to the number of secondary beams. The titles of the files must be in the form AZ.dat (e.g. 31Ar.dat). The contents of this file are the resdiduals as defined in the PID gate files. The file should be formatted as a series of rows contained the Z and A of the residuals separated by a tab space and in the same order as the PID gate files. NOTE these files are used by readBeams to define and fill all the histograms.
+- In the directory zlins, PID gate files must be created in the for each secondary beam and the titles of the files must be in the form "AZ.zline" (e.g. 31Ar.zline). The format of this file is:
+```
+Number of Gates
+Z1 A2
+Number of Gate Nodes
+Gate Node coordinates
+...
+...
+Z1 Z2
+...
+...
+
+```
+- End
 ```
 make
 ./sort OptionFile (optional) RunNumber (optional)
