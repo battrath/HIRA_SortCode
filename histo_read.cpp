@@ -33,15 +33,10 @@ histo_read::histo_read(readBeam * beams, string outfile) {
         TH1I *h4 = new TH1I(Form("VCM_%s_%s%s",iso,reac,beams->sb[k].at(i).c_str()),"",100,0,14); VCMList[k][j].push_back(h4);
         TH1I *h5 = new TH1I(Form("Egam_%s_%s%s",iso,reac,beams->sb[k].at(i).c_str()),"",800,0,17); EgamList[k][j].push_back(h5);
         TH2I *hh1 = new TH2I(Form("EgamVsErel_%s_%s%s",iso,reac,beams->sb[k].at(i).c_str()),"",800,0,17,800,0,17); EgamErelList[k][j].push_back(hh1);
-        TH2I *hh2 = new TH2I(Form("ErelTheta_%s_%s%s",iso,reac,beams->sb[k].at(i).c_str()),"",300,0,30,400,0,17); EthetaList[k][j].push_back(hh2);
-        TH2I *hhh = new TH2I(Form("ErelCos_%s_%s%s",iso,reac,beams->sb[k].at(i).c_str()),"",100,0,1,400,0,17); ErelCosList[k][j].push_back(hhh);
-        TH1I *h6 = new TH1I(Form("LongMom_%s_%s%s",iso,reac,beams->sb[k].at(i).c_str()),"",2000,0,20000); MomList[k][j].push_back(h6);
         if(j == 1){
           TH2I *hh2 = new TH2I(Form("Erel_VsPro_%s_%s%s",iso,reac,beams->sb[k].at(i).c_str()),"",800,0,17,800,0,17); ErelVsProList[k].push_back(hh2);
           TH2I *hh3 = new TH2I(Form("Jacobi_T_gs_%s_%s%s",iso,reac,beams->sb[k].at(i).c_str()),"",25,0.,1.,20,-1,1); Jacobi_T_List[k].push_back(hh3);
           TH2I *hh4 = new TH2I(Form("Jacobi_Y_gs_%s_%s%s",iso,reac,beams->sb[k].at(i).c_str()),"",25,0.,1.,20,-1,1); Jacobi_Y_List[k].push_back(hh4);
-          TH1I *hh5 = new TH1I(Form("ppRel_%s_%s%s",iso,reac,beams->sb[k].at(i).c_str()),"",1800,0,180); ppRelList[k].push_back(hh5);
-          TH1I *hh6 = new TH1I(Form("ppRel2_%s_%s%s",iso,reac,beams->sb[k].at(i).c_str()),"",1800,0,180); ppRelList2[k].push_back(hh6);
         }
       }
       dirCorrP[k][j]->cd();

@@ -347,39 +347,20 @@ void det::analyze(int event, int run) {
   float thetaCM = Correl.thetaCM;
   float Ex = Erel - QValue;
 
-  float p0 = 0;
-  for(int i = 0; i < 3; i++) {
-    p0 += pow(Correl.parPair[0].first->MomCM[i],2);
-  }
-  p0 = pow(p0,0.5);
-  float cosThetap = Correl.parPair[0].first->MomCM[2]/p0;
-
-
   Histo_read->ErelList[PBidx][pmult-1].at(SBidx)->Fill(Erel);
-  Histo_read->ErelCosList[PBidx][pmult-1].at(SBidx)->Fill(cosThetap,Erel);
-  if(cosThetap < 0.5 && cosThetap > -0.5) Histo_read->ExList[PBidx][pmult-1].at(SBidx)->Fill(Erel);
-//  Histo_read->ExList[PBidx][pmult-1].at(SBidx)->Fill(Ex);
-if(Erel < 2.5)  Histo_read->TCMList[PBidx][pmult-1].at(SBidx)->Fill(thetaCM*180./acos(-1));
+  Histo_read->ExList[PBidx][pmult-1].at(SBidx)->Fill(Ex);
+  Histo_read->TCMList[PBidx][pmult-1].at(SBidx)->Fill(thetaCM*180./acos(-1));
   float vCM = Correl.velocityCM;
- if(Erel < 2.5)  Histo_read->VCMList[PBidx][pmult-1].at(SBidx)->Fill(vCM);
-
-  float p_par = sqrt(pow(Correl.energyTot,2) - pow(Correl.check_mass,2) );
-  if(Erel < 2.5) Histo_read->MomList[PBidx][pmult-1].at(SBidx)->Fill(p_par);
-
-
-  Histo_read->EthetaList[PBidx][pmult-1].at(SBidx)->Fill(Correl.parPair[0].first->theta * 180./acos(-1), Erel);
+  Histo_read->VCMList[PBidx][pmult-1].at(SBidx)->Fill(vCM);
 
   for(int i=0;i<Ceasar->Nadded;i++) {
     float res_Vel = RingCounter->Solution[size-1].velocity;
     float angle = RingCounter->Solution[size-1].pos.Angle(Ceasar->added[i].pos);
     float dopp = Doppler->correct(Ceasar->added[i].energy,angle,res_Vel);
     Histo_read->EgamList[PBidx][pmult-1].at(SBidx)->Fill(dopp);
-    if(cosThetap < 0.5 && cosThetap > -0.5)  Histo_read->EgamErelList[PBidx][pmult-1].at(SBidx)->Fill(dopp,Erel);
+    Histo_read->EgamErelList[PBidx][pmult-1].at(SBidx)->Fill(dopp,Erel);
   }
   if(pmult == 2) {
-    Histo_read->EthetaList[PBidx][pmult-1].at(SBidx)->Fill(Correl.parPair[1].first->theta * 180./acos(-1), Erel);
-    if(Erel < 2.5) Histo_read->ppRelList[PBidx].at(SBidx)->Fill(Correl.parPair[0].first->pos.Angle(Correl.parPair[1].first->pos)*180./acos(-1));
-    if(cosThetap < 0.5 && cosThetap > -0.5 && Erel < 2.5)Histo_read->ppRelList2[PBidx].at(SBidx)->Fill(Correl.parPair[0].first->pos.Angle(Correl.parPair[1].first->pos)*180./acos(-1));
     Correl.Mask(0,1,1);
     Correl.makeParArray();
     float ExY1 = Correl.findErel()/Erel;

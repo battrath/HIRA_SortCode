@@ -38,16 +38,12 @@ public:
     vector<TH1I *> VCMList[10][7];
     vector<TH1I *> EgamList[10][7];
     vector<TH2I *> EgamErelList[10][7];
-    vector<TH2I *> EthetaList[10][7];
-    vector<TH2I *> ErelCosList[10][7];
-    vector<TH1I *> MomList[10][7];
     //2P Specific
     vector<TH2I *> Jacobi_Y_List[10];
     vector<TH2I *> Jacobi_T_List[10];
     vector<TH2I *> ErelVsProList[10];
-    vector<TH1I *> ppRelList[10];
-    vector<TH1I *> ppRelList2[10];
 
+    //Target Spectra
     TH1I *ErelLi6;
     TH1I *ThetaCMLi6;
     TH1I *VCMLi6;
