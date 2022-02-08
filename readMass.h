@@ -8,7 +8,7 @@
 using namespace std;
 
 /***********************************************************/
-/** reads in primary and secondary beams *******************/
+/** Reads in mass excess lists and calculates mass *********/
 /***********************************************************/
 
 class readMass {
