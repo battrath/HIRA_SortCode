@@ -67,7 +67,7 @@ ringCounter::ringCounter(TRandom * ran0, histo_sort * Histo1, readMass * Masses0
   ostringstream outstring;
   for (int i = 0;i < 20; i++) {
     outstring.str("");
-    outstring << "pid"<<i;
+    outstring << "CsIpid"<<i;
     name = outstring.str();
     Pid[i] = new pid(name);
   }
