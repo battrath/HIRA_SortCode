@@ -29,6 +29,28 @@ make
 - OptionFile is the input file containing filepaths and variables and RunNumber is the run to sort. The code can be run without arguments, in which case it attempts to load an options fle with the filename "option.in". The order of the arguments is unimportant and the code can be run with either (or both) of them. 
 - If a RunNumber is given as an argument it will only sort this run instead of the list of runs defined in the run options file. In this case if a options file is not given as an argument it defaults to the name "options.in" 
 
+## Making PID Gate files
+- Two macros are available to produce PID gate files, banana.C and makePID.C 
+- banana.C is used to create a single file containing a PID gate. The process for creating the file is
+```
+- Open TH2 Partcle ID plot
+- .L banana.C
+- banana()
+- Draw PID plot
+- Copy data from file banana.dat into PID file.
+```
+- makePID.C is a new code which can be used to create a complete PID gate file. The code creates two files which are used for readBeam.cpp and for pid.cpp. The code is run as following;
+```
+- Open TH2 Partcle ID plot.
+- .L makePID.C
+- makePID()
+- Draw PID plot.
+- Enter Z and A of particle.
+- Draw another gate or quit (y/n).
+- Move and rename file PID.dat into zline directory.
+- Move and rename file beam.dat into Beam directory, the filename should be of the form AZ.dat (e.g. 31Ar.dat)
+```
+
 ## CRDC Calibration 
 - In previous iterations of the code the CRDC Calibrations, obtained from Mask Runs, used only single calibration parameters which does not account for gains drifts. The code can now use ultiple calibration parameters, from different Mask Runs, with a linear interpolation used to calibrate the CRDCs. 
 - The calibration parameters for both CRDCs (X and Y grids) should be defined in a single text file with the format
