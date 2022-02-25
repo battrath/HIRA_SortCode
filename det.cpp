@@ -4,20 +4,6 @@
 /***********************************************************/
 /* Constructor *********************************************/
 /***********************************************************/
-/*
-  det::det(histo_sort * Histo0, forest * Forest0)
-  {
-  type = 0;
-  Histo_sort = Histo0;
-  Forest = Forest0;
-  ran = new TRandom;
-  Hira = new hira(ran,Histo_sort);
-  s800 = new S800(ran,Histo_sort);
-  string d_alpha("d_alpha");
-  Ceasar = new ceasar(ran,Histo_sort);
-  // Doppler = new doppler(0.326477); // beta for 54 MeV/A Ne-17
-  }
-*/
 
 det::det(histo_sort * Histo0, histo_read * Histo1, readBeam * Beam0, readMass *Masses0, runOptions *opt0) {
   type = 2;

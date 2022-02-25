@@ -6,7 +6,7 @@
 using namespace std;
 
 //places a new strip energy in an order list from max to min energy
-void elist::Add(int StripNum, int underOver, float energy,  float time) {
+void elist::Add(int StripNum, int TeleNum, int underOver, float energy,  float time) {
   //first find place in list
   int i = 0;
   for (;;) {
@@ -27,6 +27,7 @@ void elist::Add(int StripNum, int underOver, float energy,  float time) {
   Order[i].energy = energy;
   Order[i].overflow = underOver;
   Order[i].strip = StripNum;
+  Order[i].tele = TeleNum;
   Order[i].time = time;
   Order[i].energyRlow = 0.;
   // increase list length
@@ -36,7 +37,7 @@ void elist::Add(int StripNum, int underOver, float energy,  float time) {
 //***********************************************************************
 //places a new strip energy in an order list from max to min energy
 //updated for high/low gain (HINP4) chips
-void elist::Add(int StripNum, float energy, int energyRlow, int energyR, float time) {
+void elist::Add(int StripNum, int TeleNum, float energy, int energyRlow, int energyR, float time) {
   //first find place in list
   int i = 0;
   for (;;) {
@@ -61,6 +62,7 @@ void elist::Add(int StripNum, float energy, int energyRlow, int energyR, float t
   Order[i].energyR = energyR;
   Order[i].energyRlow = energyRlow;
   Order[i].strip = StripNum;
+  Order[i].tele = TeleNum;
   Order[i].time = time;
 
   // increase list length

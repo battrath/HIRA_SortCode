@@ -18,6 +18,7 @@ using namespace std;
 struct dataE {
   int ienergy;
   int id;
+  int itele;
   int itime;
   float energy;
 };
@@ -25,6 +26,7 @@ struct dataE {
 struct dataT {
   int itime;
   int id;
+  int itele;
 };
 
 struct mmap {
@@ -69,20 +71,25 @@ class hira {
   string S4PieMap;
   string RingCal;
   string PieCal;
+  string CsIChMap;
   string ProtonCal;
-
+  float dist2Si;
+  int Ntele;
+  int Nstrip;
+  int Ncsi;
  private:
   TRandom * ran;
   unsigned short xmarker[3];
 
   int RingMap[4][32];
+  int RingTeleMap[4][32];
   int PieMap[4][32];
+  int PieTeleMap[4][32];
+  int CsIMap[60];
+  int CsITeleMap[60];
 
   unsigned short chanXLM[3][400];
   unsigned short nXLM[3];
-
-  //  mmap Map[3][15];
-  //cmap CsIMap[56];
 
   histo_sort * Histo;
   histo_read * Histo_read;

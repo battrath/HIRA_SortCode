@@ -24,6 +24,7 @@ struct runOptions {
   string piecal;	//S4 Pie Calibrations
   string ringmap;	//S4 Ring Chip map
   string ringcal;	//S4 Ring Calibrations
+  string csimap;	//CsI Map
   string crdcped;	//CRDC Pedestal File
   string crdcpar;	//CRDC Charge Calibrations
   string crdccal;	//CRDC Calibrations
@@ -33,5 +34,13 @@ struct runOptions {
   float brho;		//S800 BRHO
   float siDist;		//Si-Target Distance
   float alThick;	//Al plate thickness mg/cm2
+  string sidet;		//Silicon type, S4 or HIRA Telescope
+  float xact;	        //Active size of HIRA silicon X side
+  float yact;	        //Active size of HIRA silicon Y side
+  string telegeo;	//File containing HIRA telescope geometry
+  int ntele;		//Number of telescopes
+  int npie;		//Number of Si Pie per telescope
+  int nring;		//Number of Si Rings per telescope
+  int ncsi;		//Number of CsI per telescope
 };
 #endif

@@ -16,6 +16,7 @@ struct order
   int overflow;
   int neighbours;
   float time;
+  int tele;
 };
 
 int const nnn=60;
@@ -34,11 +35,11 @@ class elist
   int Nstore = 0; //number stored in list
   order Order[nnn];
   int mult;
-  void Add(int,int,float,float);
-  void Add(int,int,float,float,float);
-  void Add(int,float,float,float,float);
-  void Add(int,float,int,int,float);
-  void Add(int, float, int, int);
+  void Add(int,int,int,float,float);
+  void Add(int,int,float,int,int,float);
+  void Add(int,float,int,int);
+
+
   void Remove(int);
   int  Reduce(char*);
   void reset();

@@ -10,6 +10,7 @@
 #include "TFile.h"
 #include "TDirectory.h"
 #include "readBeam.h"
+#include "runOptions.h"
 using namespace std;
 
 class histo_sort {
@@ -53,7 +54,7 @@ class histo_sort {
   TDirectory * dirCsIGate; //!< CsI gated on Z
   TDirectory * dirCsIMult; //!< CsI Multiplicity
   TDirectory * dirCsIET; //!< CsI time
-   TDirectory * dirCsIpTheta; //CsI theta dependence for proton
+  TDirectory * dirCsIpTheta; //CsI theta dependence for proton
   TDirectory * dirCsIpPhi; //CsI phi dependece for proton
   TDirectory * dirCsIpRing; //CsI ring dependence for proton
   TDirectory * dirCsIaTheta; //CsI theta dependence for alpha
@@ -80,7 +81,7 @@ class histo_sort {
   //ThetaPhiMap
   TDirectoryFile *dirThetaPhi;
  public:
-  histo_sort(readBeam *beams, string name);                  //!< constructor
+  histo_sort(readBeam *beams, string name, runOptions *opt);                  //!< constructor
   ~histo_sort(){};
   void write(); //!< write the root spectra to file
 
@@ -88,20 +89,13 @@ class histo_sort {
   int Nceasar;
   int NCsI;
   int Nring;
+  int Ntele;
 
   //ring counter
   TH2I* protonHitMap;
-  TH2I* csi0;
-  TH2I* csi4;
-  TH2I* csi8;
-  TH2I* csi12;
-  TH2I* csi16;
-  TH2I* csi17;
-  TH2I* csi18;
-  TH2I* csi19;
-  TH1I* csiInner;
-  TH1I* csiOuter;
-  TH2I* csiPie;
+  TH2I* csiRing[20];
+  TH2I* csiPie[20];
+
   TH2I** RingSum;
 
   //fiber
@@ -140,21 +134,15 @@ class histo_sort {
   TH1I * Txfp;
   TH1I * TRF;
 
-  TH2I * PCSum;
   TH2I * PCSum_AfterAddback;
-  TH2I * PCLSum;
-  TH2I * RCSum;
   TH2I * RCSum_AfterAddback;
-  TH2I * PSum;
-  TH2I * RSum;
 
   TH2I * PievsRing;
   TH2I * EdiffvsPie;
   TH1I * PiesMult;
   TH1I * RingsMult;
   TH1I * S4SF;
-  TH1I * S4CsI;
-  TH2I * S4Map;
+  TH2I * SiMap;
   TH1I * AMult;
   TH1I * DMult;
   TH1I * PMult;
@@ -174,8 +162,15 @@ class histo_sort {
   TH2I * RingEadd1E0;
   TH2I * RingEadd2E0;
 
-  TH2I * PTSum;
-  TH2I * RTSum;
+
+  TH2I * PTSum[20];
+  TH2I * PSum[20];
+  TH2I * PCSum[20];
+  TH2I * PCLSum[20];
+  TH2I * RTSum[20];
+  TH2I * RSum[20];
+  TH2I * RCSum[20];
+
   TH2I * PHiLo;
   TH2I * RHiLo;
 
@@ -183,35 +178,39 @@ class histo_sort {
   TH1I * SiRTime;
 
   //Pies spectra
-  TH1I ** EpiesR; //high gain raw
-  TH1I ** EpiesC; //high gain calib
-  TH1I ** EpiesC_AfterAddback; //high gain calib
-  TH1I ** TpiesR; // time raw
+  TH1I * EpiesR[20][150]; //high gain raw
+  TH1I * EpiesC[20][150]; //high gain calib
+  TH1I * TpiesR[20][150]; // time raw
+  TH1I * EpiesC_AfterAddback[20][150]; //high gain calib
 
   //rings spectra
-  TH1I ** EringsR;
-  TH1I ** EringsC;
-  TH1I ** EringsC_AfterAddback;
-  TH1I ** TringsR;
+  TH1I * EringsR[20][150];
+  TH1I * EringsC[20][150];
+  TH1I * TringsR[20][150];
+  TH1I * EringsC_AfterAddback[20][150];
 
-  TH1I ** ECsI;
-  TH1I ** TCsI;
+  TH1I * ECsI[20][150];
+  TH1I * TCsI[20][150];
+  TH2I * ET_csi[20][150];
+
+  TH2I * p_ECsI_theta[20][150];
+  TH2I * p_ECsI_thetaCal[20][150];
+  TH2I * p_ECsI_phi[20][150];
+  TH2I * p_ECsI_ring[20][150];
+
+  TH2I * alpha_ECsI_theta[20][150];
+  TH2I * alpha_ECsI_phi[20][150];
+  TH2I * alpha_ECsI_ring[20][150];
+
+  TH1I * CsIOver[20][150];
+  TH1I * ECsI_Zgate[20][150];
+
+
   TH2I * ECsISum;
   TH2I * ECsICSum;
-  TH1I ** CsIOver;
-  TH1I ** ECsI_Zgate;
   TH1I * CsIMult;
   TH1I * Etot;
-  TH2I ** ET_csi;
 
-  TH2I ** p_ECsI_theta;
-  TH2I ** p_ECsI_thetaCal;
-
-  TH2I ** p_ECsI_phi;
-  TH2I ** p_ECsI_ring;
-  TH2I ** alpha_ECsI_theta;
-  TH2I ** alpha_ECsI_phi;
-  TH2I ** alpha_ECsI_ring;
 
 
   TH1I* S800_Csi_time;
@@ -226,8 +225,8 @@ class histo_sort {
   TH1I * T_RFCYC;
   TH1I * T_A1900;
 
-  TH2I **  dee;
-  TH2I** dee_S800;
+  TH2I * dee[20][20];
+  TH2I * dee_S800[20][20];
 
   //CEASAR
   TH1I** ECeasar;
@@ -295,7 +294,6 @@ class histo_sort {
   TH2I * ObjvsXFPwithProton2;
   TH2I * ObjvsXFPwithProton3;
   TH2I * ObjvsICsum;
-  TH2I * ObjvsICsum_Ar31_uncor;
 
   vector<TH2I *> ObjvsICsum_List;
   vector<TH2I *> ObjvsICsum_alphaList;

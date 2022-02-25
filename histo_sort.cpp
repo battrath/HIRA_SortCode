@@ -1,25 +1,26 @@
 #include "histo_sort.h"
 /***********************************************************/
-histo_sort::histo_sort(readBeam * beams, string outfile) {
+histo_sort::histo_sort(readBeam * beams, string outfile, runOptions *opt) {
   ostringstream outstring;
   string name;
   file = new TFile (outfile.c_str(), "RECREATE");
   file->cd();
-  NCsI = 20;
-  Nstrip = 128;
+  NCsI = opt->ncsi;
+  Nstrip = opt->nring;
+  Ntele = opt->ntele;
   Nceasar = 192;
   Nring = 8;
   dirdee = new TDirectoryFile("dee","dee");
   dirdee->cd();
-  dee = new TH2I*[NCsI];
-  dee_S800 = new TH2I*[NCsI];
-  for(int icsi = 0; icsi < NCsI; icsi++) {
-    dirdee->cd();
-    dee[icsi] = new TH2I(Form("DEE_%i",icsi),"",1024,0,4095,1024,0,100);//4096
-    dee_S800[icsi] = new TH2I(Form("DEE_S800_%i",icsi),"",1024,0,4095,1024,0,100);//4096
+  for(int itele = 0; itele < Ntele; itele++) {
+    for(int icsi = 0; icsi < NCsI; icsi++) {
+      dirdee->cd();
+      dee[itele][icsi] = new TH2I(Form("DEE_T%i_%i",itele, icsi),"",1024,0,4095,1024,0,100);//4096
+      dee_S800[itele][icsi] = new TH2I(Form("DEE_S800_T%i_%i",itele, icsi),"",1024,0,4095,1024,0,100);//4096
+    }
   }
   file->cd();
-  //directory for Summary Spectra
+  //directory for Summary Spectra1111
   dirSum = new TDirectoryFile("Sum","Hira_Sum");
 
   //Pies of the S4
@@ -90,17 +91,10 @@ histo_sort::histo_sort(readBeam * beams, string outfile) {
   dirRing = new TDirectoryFile("Ring","Ring");
   dirRing->cd();
   protonHitMap = new TH2I("protonHitMap","",200,-12,12,200,-12,12);
-  csi0 = new TH2I("csi0","",128,0,128,256,0,256);
-  csi4 = new TH2I("csi4","",128,0,128,256,0,256);
-  csi8 = new TH2I("csi8","",128,0,128,256,0,256);
-  csi12 = new TH2I("csi12","",128,0,128,256,0,256);
-  csi16 = new TH2I("csi16","",128,0,128,256,0,256);
-  csi17 = new TH2I("csi17","",128,0,128,256,0,256);
-  csi18 = new TH2I("csi18","",128,0,128,256,0,256);
-  csi19 = new TH2I("csi19","",128,0,128,256,0,256);
-  csiInner = new TH1I("csiInner","",256,0,256);
-  csiOuter = new TH1I("csiOuter","",256,0,256);
-  csiPie = new TH2I("csiPie","",20,0,20,128,0,128);
+  for(int i = 0; i < Ntele; i++) {
+    csiRing[i] = new TH2I(Form("CsIRing_Tele%i",i),"", NCsI, 0, NCsI, Nstrip, 0, Nstrip);
+    csiPie[i] = new TH2I(Form("CsIPie_Tele%i",i),"", NCsI, 0, NCsI, Nstrip, 0, Nstrip);
+  }
   file->cd();
 
   //CsI
@@ -123,68 +117,51 @@ histo_sort::histo_sort(readBeam * beams, string outfile) {
   S800_Csi_time = new TH1I("S800_CsI_time","",1024,0,2000);
   S800_Csi_time_with_proton = new TH1I("S800_CsI_time_with_proton","",1024,0,2000);
 
-  ECsI = new TH1I*[NCsI];
-  TCsI = new TH1I*[NCsI];
-  ET_csi = new TH2I*[NCsI];
-
-  p_ECsI_theta = new TH2I*[NCsI];
-  p_ECsI_thetaCal = new TH2I*[NCsI];
-
-  p_ECsI_phi = new TH2I*[NCsI];
-  p_ECsI_ring = new TH2I*[NCsI];
-  alpha_ECsI_theta = new TH2I*[NCsI];
-  alpha_ECsI_ring = new TH2I*[NCsI];
-  alpha_ECsI_phi = new TH2I*[NCsI];
-
   dirCsIMult->cd();
   CsIMult = new TH1I("CsIMult","",10,0,10);
-  ECsI_Zgate = new TH1I*[NCsI];
-  CaldEE = new TH2I*[NCsI];
-  CsIOver = new TH1I*[NCsI];
   dirCsISum->cd();
   ECsISum = new TH2I("ECsISum","",56,-0.5,55.5,1024,0,4095);
   ECsICSum = new TH2I("ECsICSum","",56,-0.5,55.5,1024,0,500);
   Etot = new TH1I("Etot","",10000,0,1000);
 
-  for(int icsi = 0; icsi < NCsI; icsi++) {
-    dirCsIRaw->cd();
-    ECsI[icsi] = new TH1I(Form("ECsI_%i",icsi),"",4096,0,4095);
+  for(int itele = 0; itele < Ntele; itele++) {
+    for(int icsi = 0; icsi < NCsI; icsi++) {
+      dirCsIRaw->cd();
+      ECsI[itele][icsi] = new TH1I(Form("ECsI_%i_%i",itele, icsi),"",4096,0,4095);
 
-    dirCsIGate->cd();
-    ECsI_Zgate[icsi] = new TH1I(Form("ECsI_%i_Gate",icsi),"",1024,0,4095);
+      dirCsIGate->cd();
+      ECsI_Zgate[itele][icsi] = new TH1I(Form("ECsI_%i_%i_Gate",itele, icsi),"",1024,0,4095);
 
-    dirCsISum->cd();
-    CsIOver[icsi] = new TH1I(Form("CsIOver_%i",icsi),"",1024,0,4095);
+      dirCsISum->cd();
+      CsIOver[itele][icsi] = new TH1I(Form("CsIOver_%i_%i",itele, icsi),"",1024,0,4095);
 
-    dirCsITime->cd();
-    TCsI[icsi] = new TH1I(Form("TCsI_%i",icsi),"",1500,-1000,500);
+      dirCsITime->cd();
+      TCsI[itele][icsi] = new TH1I(Form("TCsI_%i_%i",itele, icsi),"",1500,-1000,500);
 
-    dirCsIET->cd();
-    ET_csi[icsi] = new TH2I(Form("ET_CsI_%i",icsi),"",1024,0,2000,1500,-1000,500);
+      dirCsIET->cd();
+      ET_csi[itele][icsi] = new TH2I(Form("ET_CsI_%i_%i",itele, icsi),"",1024,0,2000,1500,-1000,500);
 
-    dirCsIpTheta->cd();
-    p_ECsI_theta[icsi] = new TH2I(Form("p_ECsI_theta_%i",icsi),"",400,0.,0.4,4000,0,4000);
-    p_ECsI_thetaCal[icsi] = new TH2I(Form("p_ECsI_thetaCal_%i",icsi),"",400,0.,0.4,4000,0,4000);
+      dirCsIpTheta->cd();
+      p_ECsI_theta[itele][icsi] = new TH2I(Form("p_ECsI_theta_%i_%i",itele, icsi),"",400,0.,0.4,4000,0,4000);
+      p_ECsI_thetaCal[itele][icsi] = new TH2I(Form("p_ECsI_thetaCal_%i_%i", itele, icsi),"",400,0.,0.4,4000,0,4000);
 
-    dirCsIpPhi->cd();
-    p_ECsI_phi[icsi] = new TH2I(Form("p_ECsI_phi_%i",icsi),"",128,0,6.4,4000,0,4000);
+      dirCsIpPhi->cd();
+      p_ECsI_phi[itele][icsi] = new TH2I(Form("p_ECsI_phi_%i_%i",itele, icsi),"",128,0,6.4,4000,0,4000);
 
-    dirCsIpRing->cd();
-    if(icsi<16)	p_ECsI_ring[icsi] = new TH2I(Form("p_ECsI_ring_%i",icsi),"",80,50,130,4000,0,4000);
-    else p_ECsI_ring[icsi] = new TH2I(Form("p_ECsI_ring_%i",icsi),"",70,0,70,4000,0,4000);
+      dirCsIpRing->cd();
+      if(icsi<16) p_ECsI_ring[itele][icsi] = new TH2I(Form("p_ECsI_ring_%i_%i",itele, icsi),"",80,50,130,4000,0,4000);
+      else p_ECsI_ring[itele][icsi] = new TH2I(Form("p_ECsI_ring_%i_%i",itele, icsi),"",70,0,70,4000,0,4000);
 
-    dirCsIaTheta->cd();
-    alpha_ECsI_theta[icsi] = new TH2I(Form("alpha_ECsI_theta_%i",icsi),"",400,0.0,0.4,4000,0,4000);
+      dirCsIaTheta->cd();
+      alpha_ECsI_theta[itele][icsi] = new TH2I(Form("alpha_ECsI_theta_%i_%i",itele, icsi),"",400,0.0,0.4,4000,0,4000);
 
-    dirCsIaPhi->cd();
-    alpha_ECsI_phi[icsi] = new TH2I(Form("alpha_ECsI_phi_%i",icsi),"",128,0,6.4,4000,0,4000);
+      dirCsIaPhi->cd();
+      alpha_ECsI_phi[itele][icsi] = new TH2I(Form("alpha_ECsI_phi_%i_%i",itele, icsi),"",128,0,6.4,4000,0,4000);
 
-    outstring.str("");
-    outstring << "alpha_ECsI_ring_" << icsi;
-    name = outstring.str();
-    dirCsIaRing->cd();
-    if(icsi<16)	alpha_ECsI_ring[icsi] = new TH2I(Form("alpha_ECsI_ring_%i",icsi),"",80,50,130,4000,0,4000);
-    else alpha_ECsI_ring[icsi] = new TH2I(Form("alpha_ECsI_ring_%i",icsi),"",70,0,70,4000,0,4000);
+      dirCsIaRing->cd();
+      if(icsi<16) alpha_ECsI_ring[itele][icsi] = new TH2I(Form("alpha_ECsI_ring_%i_%i",itele, icsi),"",80,50,130,4000,0,4000);
+      else alpha_ECsI_ring[itele][icsi] = new TH2I(Form("alpha_ECsI_ring_%i_%i",itele, icsi),"",70,0,70,4000,0,4000);
+    }
   }
 
 /***********************************************************/
@@ -266,24 +243,9 @@ histo_sort::histo_sort(readBeam * beams, string outfile) {
   SiRTime = new TH1I("Si Time Rings","",2000,0,16000);
   SiPTime = new TH1I("Si Time Pies","",2000,0,16000);
 
-  EpiesR = new TH1I*[Nstrip];
-  EpiesC = new TH1I*[Nstrip];
-  EpiesC_AfterAddback = new TH1I*[Nstrip];
-  TpiesR = new TH1I*[Nstrip];
-
-  EringsR  = new TH1I*[Nstrip];
-  EringsC  = new TH1I*[Nstrip];
-  EringsC_AfterAddback  = new TH1I*[Nstrip];
-  TringsR  = new TH1I*[Nstrip];
-
-  PTSum = new TH2I("PTSum","",Nstrip,-0.5,Nstrip-0.5,4000,0,16000);
-  PTSum->GetXaxis()->SetTitle("Strip Num");
-  PTSum->GetYaxis()->SetTitle("Time [channel]");
-
   PievsRing = new TH2I("PievsRing","",1000,0,100,1000,0,100);
   EdiffvsPie = new TH2I("EdiffvsPie","",1000,0,100,1000,-50,50);
   S4SF = new TH1I("S4SF","",5,0,5);
-  S4CsI = new TH1I("S4CsI","",5,0,5);
 
   PieCalSum = new TH1I("PiesCalibratedSum","",1000,0,20);
   PieCalSum->GetXaxis()->SetTitle("pies energy [MeV]");
@@ -325,39 +287,25 @@ histo_sort::histo_sort(readBeam * beams, string outfile) {
   RingEadd2E0->GetXaxis()->SetTitle("original energy");
   RingEadd2E0->GetYaxis()->SetTitle("neighbour energy");
 
-  RTSum = new TH2I("RTSum","",Nstrip,-0.5,Nstrip-0.5,4000,0,16000);
-  RTSum->GetXaxis()->SetTitle("Strip Num");
-  RTSum->GetYaxis()->SetTitle("Time [channel]");
-
-  PCSum = new TH2I("PCSum","",Nstrip,-0.5,Nstrip-0.5,10000,0,10);
-  PCSum->GetXaxis()->SetTitle("Strip Num");
-  PCSum->GetYaxis()->SetTitle("Energy [channel]");
+  for(int itele = 0; itele < Ntele; itele++) {
+    PTSum[itele] = new TH2I("PTSum","",Nstrip,-0.5,Nstrip-0.5,4000,0,16000);
+    PSum[itele] = new TH2I(Form("PSum_%i", itele), "",Nstrip,-0.5,Nstrip-0.5,80000,0,16000);
+    PCSum[itele] = new TH2I(Form("PCSum_%i", itele),"",Nstrip,-0.5,Nstrip-0.5,10000,0,10);
+    PCLSum[itele] = new TH2I(Form("PCLSum_%i", itele),"",Nstrip,-0.5,Nstrip-0.5,10000,0,10);
+    RTSum[itele] = new TH2I(Form("RTSum_%i", itele),"",Nstrip,-0.5,Nstrip-0.5,4000,0,16000);
+    RSum[itele] = new TH2I(Form("RSum_%i", itele),"",Nstrip,-0.5,Nstrip-0.5,80000,0,16000);
+    RCSum[itele] = new TH2I(Form("RCSum_%i", itele),"",Nstrip,-0.5,Nstrip-0.5,10000,0,10);
+  }
 
   PCSum_AfterAddback = new TH2I("PCSum_AfterAddback","",Nstrip,-0.5,Nstrip-0.5,10000,0,10);
   PCSum_AfterAddback->GetXaxis()->SetTitle("Strip Num");
   PCSum_AfterAddback->GetYaxis()->SetTitle("Energy [channel]");
 
-  PCLSum = new TH2I("PCLSum","",Nstrip,-0.5,Nstrip-0.5,10000,0,10);
-  PCLSum->GetXaxis()->SetTitle("Strip Num");
-  PCLSum->GetYaxis()->SetTitle("Energy [channel]");
-
-  PSum = new TH2I("PSum","",Nstrip,-0.5,Nstrip-0.5,80000,0,16000);
-  PSum->GetXaxis()->SetTitle("Strip Num");
-  PSum->GetYaxis()->SetTitle("Energy [channel]");
-
-  RCSum = new TH2I("RCSum","",Nstrip,-0.5,Nstrip-0.5,10000,0,10);
-  RCSum->GetXaxis()->SetTitle("Strip Num");
-  RCSum->GetYaxis()->SetTitle("Energy [channel]");
-
   RCSum_AfterAddback = new TH2I("RCSum_AfterAddback","",Nstrip,-0.5,Nstrip-0.5,10000,0,10);
   RCSum_AfterAddback->GetXaxis()->SetTitle("Strip Num");
   RCSum_AfterAddback->GetYaxis()->SetTitle("Energy [channel]");
 
-  RSum = new TH2I("RSum","",Nstrip,-0.5,Nstrip-0.5,80000,0,16000);
-  RSum->GetXaxis()->SetTitle("Strip Num");
-  RSum->GetYaxis()->SetTitle("Energy [channel]");
-
-  S4Map = new TH2I("S4Map","",2800,-70,70,2800,-70,70);
+  SiMap = new TH2I("SiMap","",2800,-70,70,2800,-70,70);
   AMult = new TH1I("AMult","",20,0,20);
   DMult = new TH1I("DMult","",20,0,20);
   PMult = new TH1I("PMult","",20,0,20);
@@ -368,40 +316,41 @@ histo_sort::histo_sort(readBeam * beams, string outfile) {
   dirPies->cd();
   PiesMult = new TH1I("PiesMult","",128,-0.5,127.5);
 
-  for (int istrip = 0; istrip < Nstrip; istrip++) {
-
+  for(int itele = 0; itele < Ntele; itele++) {
+    for (int istrip = 0; istrip < Nstrip; istrip++) {
       dirPiesRaw->cd();
-      EpiesR[istrip] = new TH1I(Form("P_%i",istrip),"",4000,0,16000);
-      EpiesR[istrip]->GetXaxis()->SetTitle("Energy High Gain[channel]");
+      EpiesR[itele][istrip] = new TH1I(Form("P_T%i_%i", itele, istrip),"",4000,0,16000);
+      EpiesR[itele][istrip]->GetXaxis()->SetTitle("Energy High Gain[channel]");
 
       dirPiesCal->cd();
-      EpiesC[istrip] = new TH1I(Form("PC_%i",istrip),"",10000,0,100);
-      EpiesC[istrip]->GetXaxis()->SetTitle("Energy [MeV]");
+      EpiesC[itele][istrip] = new TH1I(Form("PC_T%i_%i", itele, istrip),"",10000,0,100);
+      EpiesC[itele][istrip]->GetXaxis()->SetTitle("Energy [MeV]");
 
       dirPiesCal->cd();
-      EpiesC_AfterAddback[istrip] = new TH1I(Form("PC_%i_AfterAddback",istrip),"",10000,0,100);
-      EpiesC_AfterAddback[istrip]->GetXaxis()->SetTitle("Energy [MeV]");
+      EpiesC_AfterAddback[itele][istrip] = new TH1I(Form("PC_T%i_%i_AfterAddback", itele, istrip),"",10000,0,100);
+      EpiesC_AfterAddback[itele][istrip]->GetXaxis()->SetTitle("Energy [MeV]");
 
       dirPiesTime->cd();
-      TpiesR[istrip] = new TH1I(Form("TF_%i",istrip),"",2000,0,16000);
-      TpiesR[istrip]->GetXaxis()->SetTitle("time [channels]");
+      TpiesR[itele][istrip] = new TH1I(Form("TF_T%i_%i",itele, istrip),"",2000,0,16000);
+      TpiesR[itele][istrip]->GetXaxis()->SetTitle("time [channels]");
 
       dirRingsRaw->cd();
-      EringsR[istrip] = new TH1I(Form("R_%i",istrip),"",4000,0,16000);
-      EringsR[istrip]->GetXaxis()->SetTitle("Energy High Gain[channel]");
+      EringsR[itele][istrip] = new TH1I(Form("R_T%i_%i",itele, istrip),"",4000,0,16000);
+      EringsR[itele][istrip]->GetXaxis()->SetTitle("Energy High Gain[channel]");
 
       dirRingsCal->cd();
-      EringsC[istrip] = new TH1I(Form("RC_%i",istrip),"",10000,0,100);
-      EringsC[istrip]->GetXaxis()->SetTitle("Energy [MeV]");
+      EringsC[itele][istrip] = new TH1I(Form("RC_T%i_%i",itele, istrip),"",10000,0,100);
+      EringsC[itele][istrip]->GetXaxis()->SetTitle("Energy [MeV]");
 
       dirRingsCal->cd();
-      EringsC_AfterAddback[istrip] = new TH1I(Form("RC_%i_AfterAddback",istrip),"",10000,0,100);
-      EringsC_AfterAddback[istrip]->GetXaxis()->SetTitle("Energy [MeV]");
+      EringsC_AfterAddback[itele][istrip] = new TH1I(Form("RC_T%i_%i_AfterAddback",itele, istrip),"",10000,0,100);
+      EringsC_AfterAddback[itele][istrip]->GetXaxis()->SetTitle("Energy [MeV]");
 
       dirRingsTime->cd();
-      TringsR[istrip] = new TH1I(Form("TB_%i",istrip),"",2000,0,16000);
-      TringsR[istrip]->GetXaxis()->SetTitle("time [channels]");
+      TringsR[itele][istrip] = new TH1I(Form("TB_T%i_%i",itele, istrip),"",2000,0,16000);
+      TringsR[itele][istrip]->GetXaxis()->SetTitle("time [channels]");
     }
+  }
 
 
 /***********************************************************/
@@ -501,8 +450,6 @@ histo_sort::histo_sort(readBeam * beams, string outfile) {
   ObjvsICsum = new TH2I("ObjvsICsum","",600,-300,0,1024,0,4095);
   ObjvsICsum->GetXaxis()->SetTitle("T Object");
   ObjvsICsum->GetYaxis()->SetTitle("IC Sum");
-
-  ObjvsICsum_Ar31_uncor = new TH2I("ObjvsICsum_Ar31_uncor","",600,-300,0,1024,0,4095);
 
   Objvsafp = new TH2I("Objvsafp","",600,-300,0,1000,-1,1);
   Objvsafp->GetXaxis()->SetTitle("Obj Time");

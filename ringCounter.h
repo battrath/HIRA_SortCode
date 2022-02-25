@@ -17,12 +17,7 @@
 #include "elist.h"
 #include "readMass.h"
 #include "runOptions.h"
-struct pieCsiMap {
-  int N;
-  int NcsiThere;
-  int csi[6];
-  bool there[6];
-};
+#include "telescope.h"
 
 struct s800_results {
   bool trig_coin;
@@ -50,6 +45,12 @@ class ringCounter {
 
   static bool const relativity;
 
+  string sidet; // S4 or HIRA telescope
+  int Npie;
+  int Nstrip;
+  int Ncsi;
+  int Ntele;
+
   int multProton;
   int multAlpha;
   int multDeuteron;
@@ -57,7 +58,6 @@ class ringCounter {
   int multiHit(elist*,elist*);
   int NestDim;
 
-  void match(elist *, elist *, elist *);
   int NestArray[50];
   int arrayD[50];
   int arrayB[50];
@@ -75,11 +75,14 @@ class ringCounter {
 
   void reset();
   int matchWithCsi(elist *);
+  int matchWithS4Csi(elist *);
+  int matchWithHIRACsi(elist *);
+
   void csical(int icsi1, int i2, elist *);
 
   int Nsolution;
   solution Solution[21];
-  pid * Pid[20];
+  pid * Pid[20][20];
 
   int csiTimeMin[20];
   int csiTimeMax[20];
@@ -96,12 +99,12 @@ class ringCounter {
   TRandom *ran;
   histo_sort * Histo;
   readMass * Masses;
+  telescope * Telescope;
   float pie_energy;
   float ring_energy;
   float distance;
   int counter;
 
-  pieCsiMap PieCsiMap[Npie];
   void getMomentum();
 
   calibrate * calProton;

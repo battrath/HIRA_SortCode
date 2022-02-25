@@ -21,9 +21,6 @@
 #include "runOptions.h"
 #include "correl2.h"
 #include "doppler.h"
-//#include "forest.h"
-//#include "event.h"
-#include "constants.h"
 #include "S800.h"
 #include "ceasar.h"
 #include "losses.h"
@@ -57,10 +54,10 @@ class det {
   int treelevel;
   int ngood = 0;
   int NS800;
-
-  int Run;
   int NS800_PB;
   int NS800_PBpass;
+
+  int Run;
   int trig[3];
   vector<int> NPB;
   vector<int> NSB[10];

@@ -22,9 +22,14 @@ hira::hira(TRandom * ran0, histo_sort * Histo0, histo_read * Histo1, runOptions 
   ran = ran0;
   S4RingMap = opt->ringmap;
   S4PieMap = opt->piemap;
+  CsIChMap = opt->csimap;
   RingCal = opt->ringcal;
   PieCal = opt->piecal;
   ProtonCal = opt->pcal;
+  dist2Si = opt->siDist;
+  Ntele = opt->ntele;
+  Nstrip = opt->nring;
+  Ncsi = opt->ncsi;
   init();
 }
 
@@ -39,15 +44,17 @@ void hira::init() {
   }
   string name;
   getline(ifile, name);
-  int CB, Ch, iR;
+  int CB, Ch, iT, iR;
   for (;;) {
-    ifile >> CB >> Ch >> iR;
+    ifile >> CB >> Ch >> iT >> iR;
     if (ifile.eof()) break;
     if (ifile.bad()) break;
     RingMap[CB - 5][Ch] = iR;
+    RingTeleMap[CB - 5][Ch] = iT;
   }
   ifile.close();
   ifile.clear();
+
   ifstream ifile2(S4PieMap.c_str());
   if (!ifile2.is_open()) {
     cout << "Pie map not found" << endl;
@@ -56,23 +63,38 @@ void hira::init() {
   getline(ifile2, name);
   int iP;
   for (;;) {
-    ifile2 >> CB >> Ch >> iP;
+    ifile2 >> CB >> Ch >> iT >> iP;
     if (ifile2.eof()) break;
     if (ifile2.bad()) break;
     PieMap[CB - 1][Ch] = iP;
+    PieTeleMap[CB - 1][Ch] = iT;
   }
   ifile2.close();
   ifile2.clear();
 
+  ifstream ifile3(CsIChMap.c_str());
+  if (!ifile3.is_open()) {
+    cout << "CsI map not found" << endl;
+    abort();
+  }
+  getline(ifile3, name);
+  int iC;
+  for (;;) {
+    ifile3 >> Ch >> iT >> iC;
+    if (ifile3.eof()) break;
+    if (ifile3.bad()) break;
+    CsIMap[Ch] = iC;
+    CsITeleMap[Ch] = iT;
+  }
+  ifile3.close();
+  ifile3.clear();
+
   //read in calibrations
-  int Ntele = 1;
-  int Nstrip = 128;
 
   calPies = new calibrate(Ntele, Nstrip, PieCal, 1);
   calRings = new calibrate(Ntele, Nstrip, RingCal, 1);
-  calCsi = new calibrate(1, 20, ProtonCal, 1);
+  calCsi = new calibrate(Ntele, Ncsi, ProtonCal, 1);
 
-  float dist2Si = 33.19; //cm for Ar30 run
   XY_mon = new XYmon(dist2Si);
 
   NHira = 0;
@@ -215,12 +237,14 @@ bool hira::unpackCsi(unsigned short * & point, int runno) {
       int id = ADC.channel[i] + 32 * iadc;
       int ienergy = ADC.data[i];
       if (id < 20) {
-        int iCsi = id; //CsIMap[id].iCsi;
-        float energy = calCsi->getEnergy(0, id, ienergy + ran->Rndm());
+        int iCsi = CsIMap[id];
+        int itele = CsITeleMap[id];
+        float energy = calCsi->getEnergy(itele, id, ienergy + ran->Rndm());
         DataE[NE].id = iCsi;
+        DataE[NE].itele = itele;
         DataE[NE].ienergy = ienergy;
         DataE[NE].energy = energy;
-        Histo->ECsI[iCsi]->Fill(ienergy);
+        Histo->ECsI[itele][iCsi]->Fill(ienergy);
         Histo->ECsISum->Fill(iCsi, ienergy);
         Histo->ECsICSum->Fill(iCsi, energy);
         NE++;
@@ -251,10 +275,13 @@ bool hira::unpackCsi(unsigned short * & point, int runno) {
     for (int i = 0; i < TDC->Ndata; i++) {
       int id = TDC->dataOut[i].channel;
       int itime = TDC->dataOut[i].time;
+      int itele = 0;
       if (id < 20) {
+//KYLE!!! How to give TDC a Telescope Number?
         DataT[NT].id = id;
+        DataT[NT].itele = itele;
         DataT[NT].itime = itime;
-        Histo->TCsI[id]->Fill(itime / 10.);
+        Histo->TCsI[itele][id]->Fill(itime / 10.);
         NT++;
       } else if (id == 65) {
         T_RFSCIN = itime;
@@ -286,13 +313,14 @@ bool hira::unpackCsi(unsigned short * & point, int runno) {
     DataE[ie].itime = -1;
     bool found = false;
     for (int it = 0; it < NT; it++) {
-      if (DataE[ie].id == DataT[it].id) { //we have matched
+      if ((DataE[ie].itele == DataT[it].itele) &&(DataE[ie].id == DataT[it].id)) { //we have matched
         found = true;
         DataE[ie].itime = DataT[it].itime;
         int icsi = DataE[ie].id;
+        int itele = 0;
         if (DataE[ie].energy > Csi_energy_min) { // && DataE[ie].itime > 500 && DataE[ie].itime < 1500)
-          Csi.Add(icsi, DataE[ie].energy, 0., DataE[ie].ienergy, DataE[ie].itime);
-          Histo->ET_csi[icsi]->Fill(DataE[ie].ienergy, DataE[ie].itime / 10.);
+          Csi.Add(icsi, itele, DataE[ie].energy, 0., DataE[ie].ienergy, DataE[ie].itime);
+          Histo->ET_csi[itele][icsi]->Fill(DataE[ie].ienergy, DataE[ie].itime / 10.);
           Nfound++;
         }
       }
@@ -300,8 +328,9 @@ bool hira::unpackCsi(unsigned short * & point, int runno) {
     if (!found) {
       if (DataE[ie].energy > Csi_energy_min) {
         int icsi = DataE[ie].id;
+        int itele = 0;
         Nnotfound++;
-        Csi.Add(icsi, DataE[ie].energy, 0., DataE[ie].ienergy, 0.);
+        Csi.Add(icsi, itele, DataE[ie].energy, 0., DataE[ie].ienergy, 0.);
       }
     }
   }
@@ -363,43 +392,47 @@ bool hira::unpackSi_HINP4(unsigned short * & point) {
         int idum = chanNum;
         int iPie = -1;
         iPie = PieMap[chipNum - 1][chanNum];
-        float energy = calPies->getEnergy(0, iPie, ienergy + ran->Rndm());
+        int iTele = -1;
+        iTele = PieTeleMap[chipNum - 1][chanNum];
+        float energy = calPies->getEnergy(iTele, iPie, ienergy + ran->Rndm());
         float time = 0.; //calPiesT->getEnergy(0,chanNum,itime+ran->Rndm());
         float lowenergy = 0.;
-        Histo->PTSum->Fill(iPie, time);
+        Histo->PTSum[iTele]->Fill(iPie, time);
         //Pies raw spectra
-        Histo->EpiesR[iPie]->Fill(ienergy); //high gain
-        Histo->TpiesR[iPie]->Fill(itime); //time
-        Histo->PSum->Fill(iPie, ienergy);
+        Histo->EpiesR[iTele][iPie]->Fill(ienergy); //high gain
+        Histo->TpiesR[iTele][iPie]->Fill(itime); //time
+        Histo->PSum[iTele]->Fill(iPie, ienergy);
         //Pies calibrated spectra
-        Histo->EpiesC[iPie]->Fill(energy); //high gain
-        Histo->PCSum->Fill(iPie, energy);
-        Histo->PCLSum->Fill(iPie, lowenergy);
+        Histo->EpiesC[iTele][iPie]->Fill(energy); //high gain
+        Histo->PCSum[iTele]->Fill(iPie, energy);
+        Histo->PCLSum[iTele]->Fill(iPie, lowenergy);
         if (energy > Si_energy_min) {
-          Pie.Add(iPie, energy, 0., ienergy, time);
+          Pie.Add(iPie, iTele, energy, 0., ienergy, time);
         }
       }
       else if (chipNum >= 5 && chipNum <= 8) {
         int iRing = -1;
         iRing = RingMap[chipNum - 5][chanNum];
+        int iTele = -1;
+        iTele = RingTeleMap[chipNum - 5][chanNum];
         if (iRing > 127 || iRing < 0) {
           cout << " RingMap error!!" << endl;
           return false;
         }
-        float energy = calRings->getEnergy(0, iRing, ienergy + ran->Rndm());
+        float energy = calRings->getEnergy(iTele, iRing, ienergy + ran->Rndm());
         float lowenergy = 0.; //calRings->getEnergy(0,iRing,voltage_lo_HL);
         float time = 0.; //calRingsT->getEnergy(0,iRing,itime+ran->Rndm());
-        Histo->RTSum->Fill(iRing, time);
+        Histo->RTSum[iTele]->Fill(iRing, time);
         //Rings raw spectra
-        Histo->EringsR[iRing]->Fill(ienergy); //high gain
-        Histo->TringsR[iRing]->Fill(itime); //time
-        Histo->RSum->Fill(iRing, ienergy);
+        Histo->EringsR[iTele][iRing]->Fill(ienergy); //high gain
+        Histo->TringsR[iTele][iRing]->Fill(itime); //time
+        Histo->RSum[iTele]->Fill(iRing, ienergy);
 
         //Rings calibrated spectra
-        Histo->EringsC[iRing]->Fill(energy); //high gain
-        Histo->RCSum->Fill(iRing, energy);
+        Histo->EringsC[iTele][iRing]->Fill(energy); //high gain
+        Histo->RCSum[iTele]->Fill(iRing, energy);
         if (energy > Si_energy_min) {
-          Ring.Add(iRing, energy, 0., ienergy, time);
+          Ring.Add(iRing, iTele, energy, 0., ienergy, time);
         }
       }
     }

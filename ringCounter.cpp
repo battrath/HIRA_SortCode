@@ -20,56 +20,24 @@ ringCounter::ringCounter(TRandom * ran0, histo_sort * Histo1, readMass * Masses0
   Histo = Histo1;
   distance = dist0;
   Masses = Masses0;
-  //make map of Csi associated with Pies
-  int id_csi,id_csi_plus,id_csi_minus;
-  for (int i = 0;i < Npie; i++) {
-    PieCsiMap[i].N = 0;
-    //inner ring
-    id_csi = floor((float)(i+4)/32.) + 16;
-    if (id_csi > 19) id_csi -= 4.;
-    PieCsiMap[i].csi[PieCsiMap[i].N] = id_csi;
-    PieCsiMap[i].N++;
-    //in case pies and Csi are not lined up exactly
-    // consider Csi if pie is off by plus-minus one
-    id_csi_plus = floor((float)(i+1+4)/32.) + 16;
-    if (id_csi_plus > 19) id_csi_plus -= 4.;
-    if (id_csi_plus != id_csi) {
-      PieCsiMap[i].csi[PieCsiMap[i].N] = id_csi_plus;
-      PieCsiMap[i].N;
-    }
-    id_csi_minus = floor((float)(i-1+4)/32.) + 16;
-    if (id_csi_minus > 19) id_csi_plus -= 4.;
-    if (id_csi_minus != id_csi)	{
-      PieCsiMap[i].csi[PieCsiMap[i].N] = id_csi_minus;
-      PieCsiMap[i].N;
-    }
-    //outer ring
-    id_csi = floor((float)(i+4)/8.) ;
-    if (id_csi == 16) id_csi = 0.;
-    PieCsiMap[i].csi[PieCsiMap[i].N] = id_csi;
-    PieCsiMap[i].N++;
-    id_csi_plus = floor((float)(i+1+4)/8.) ;
-    if (id_csi_plus == 16) id_csi_plus = 0.;
-    if (id_csi_plus != id_csi) {
-      PieCsiMap[i].csi[PieCsiMap[i].N] = id_csi_plus;
-      PieCsiMap[i].N;
-    }
-    id_csi_minus = floor((float)(i-1+4)/8.) ;
-    if (id_csi_minus == 16) id_csi_minus = 0.;
-    if (id_csi_minus != id_csi) {
-      PieCsiMap[i].csi[PieCsiMap[i].N] = id_csi_minus;
-      PieCsiMap[i].N;
-    }
-  }
+
+  sidet = opt->sidet;
+  Ntele = opt->ntele;
+  Npie = opt->npie;
+  Nstrip = opt->nring;
+  Ncsi = opt->ncsi;
 
   counter = 0;
   string name;
   ostringstream outstring;
-  for (int i = 0;i < 20; i++) {
-    outstring.str("");
-    outstring << "CsIpid"<<i;
-    name = outstring.str();
-    Pid[i] = new pid(name);
+  for(int i = 0; i < Ntele; i++) {
+    for (int j = 0; j <Ncsi; j++) {
+      Pid[i][j] = new pid(Form("CsIpidT%i_%i", i, j));
+//    outstring.str("");
+//    outstring << "CsIpid"<<i;
+//    name = outstring.str();
+//    Pid[i][j] = new pid(name);
+    }
   }
 
   //loading energy loss tables for target
@@ -78,9 +46,9 @@ ringCounter::ringCounter(TRandom * ran0, histo_sort * Histo1, readMass * Masses0
   losses_Al = new CLosses(3,"_Al.loss");
 
   //Proton Calibrations
-  calProton = new calibrate(1,20,opt->pcal,1);
-  calDeuteron = new calibrate(1,20,opt->dcal,1);
-  calAlpha = new calibrate(1,20,opt->acal,1);
+  calProton = new calibrate(Ntele, Ncsi, opt->pcal, 1);
+  calDeuteron = new calibrate(Ntele, Ncsi, opt->dcal, 1);
+  calAlpha = new calibrate(Ntele, Ncsi, opt->acal, 1);
 
   //timw gates for s800 coincidence
   int one,two,three;
@@ -91,12 +59,10 @@ ringCounter::ringCounter(TRandom * ran0, histo_sort * Histo1, readMass * Masses0
     csiTimeMax[one]= three;
   }
   fileTime.close();
+  Telescope = new telescope(ran, opt);
 }
 //*****************************************//
 void ringCounter::reset() {
-//  Pie.reset();
-//  Ring.reset();
-//  Csi.reset();
 
   //reset the solutions
   for(int i = 0;i < Nsolution; i++) {
@@ -108,6 +74,7 @@ void ringCounter::reset() {
     Solution[i].icsi =-1;
     Solution[i].iPie =-1;
     Solution[i].iRing = -1;
+    Solution[i].itele = -1;
     Solution[i].mass = 0;
     Solution[i].Ekin = 0;
     Solution[i].iZ =-1;
@@ -183,28 +150,21 @@ void ringCounter::analysis(s800_results S800_results, elist Pie, elist Ring, eli
   // ==================================================================
   for(int i = 0;i < Pie.Nstore;i++) {
     Histo->PCSum_AfterAddback->Fill(Pie.Order[i].strip,Pie.Order[i].energy);
-    Histo->EpiesC_AfterAddback[Pie.Order[i].strip]->Fill(Pie.Order[i].energy);
+    Histo->EpiesC_AfterAddback[Pie.Order[i].tele][Pie.Order[i].strip]->Fill(Pie.Order[i].energy);
   }
 
   for(int i = 0;i < Ring.Nstore; i++) {
     Histo->RCSum_AfterAddback->Fill(Ring.Order[i].strip,Ring.Order[i].energy);
-    Histo->EringsC_AfterAddback[Ring.Order[i].strip]->Fill(Ring.Order[i].energy);
+    Histo->EringsC_AfterAddback[Ring.Order[i].tele][Ring.Order[i].strip]->Fill(Ring.Order[i].energy);
   }
   if (!(Pie.Nstore >0 && Ring.Nstore > 0 && Csi.Nstore >0)) return;
 
   //check mapping
   if (Csi.Nstore == 1) {
     int id_csi = Csi.Order[0].strip;
-    if (id_csi < 16) Histo->csiInner->Fill(Ring.Order[0].strip);
-    else Histo->csiOuter->Fill(Ring.Order[0].strip);
-    if (id_csi == 0) Histo->csi0->Fill(Pie.Order[0].strip,Ring.Order[0].strip);
-    if (id_csi == 4) Histo->csi4->Fill(Pie.Order[0].strip,Ring.Order[0].strip);
-    if (id_csi == 8) Histo->csi8->Fill(Pie.Order[0].strip,Ring.Order[0].strip);
-    if (id_csi == 12) Histo->csi12->Fill(Pie.Order[0].strip,Ring.Order[0].strip);
-    if (id_csi == 16) Histo->csi16->Fill(Pie.Order[0].strip,Ring.Order[0].strip);
-    if (id_csi == 17) Histo->csi17->Fill(Pie.Order[0].strip,Ring.Order[0].strip);
-    if (id_csi == 18) Histo->csi18->Fill(Pie.Order[0].strip,Ring.Order[0].strip);
-    if (id_csi == 19) Histo->csi19->Fill(Pie.Order[0].strip,Ring.Order[0].strip);
+    int id_tele = Csi.Order[0].tele;
+    Histo->csiRing[id_tele]->Fill(id_csi, Ring.Order[0].strip);
+    Histo->csiPie[id_tele]->Fill(id_csi, Pie.Order[0].strip);
   }
   int Ncsi_before = Csi.Nstore;
   //remove csi with large times // random S800 Csi coincidences
@@ -216,17 +176,17 @@ void ringCounter::analysis(s800_results S800_results, elist Pie, elist Ring, eli
   //E-De maps for S800 coincidences
   if (Csi.Nstore >=1 && S800_results.trig_coin) {
     int id_csi = Csi.Order[0].strip;
+    int id_tele = Csi.Order[0].tele;
     for (int ipi = 0; ipi < 1; ipi++) {
       if (id_csi < 16) {
         int id_csi2 = floor((float)(Pie.Order[ipi].strip+4)/8.) ;
         if (id_csi2 == 16) id_csi2 = 0.;
-        if (id_csi == id_csi2) Histo->dee_S800[id_csi]->Fill(Csi.Order[0].energyR,Pie.Order[ipi].energy);
+        if (id_csi == id_csi2) Histo->dee_S800[id_tele][id_csi]->Fill(Csi.Order[0].energyR,Pie.Order[ipi].energy);
       } else {
         int  id_csi2 = floor((float)Pie.Order[ipi].strip/32.) + 16;
-        if (id_csi == id_csi2) Histo->dee_S800[id_csi]->Fill(Csi.Order[0].energyR,Pie.Order[ipi].energy);
+        if (id_csi == id_csi2) Histo->dee_S800[id_tele][id_csi]->Fill(Csi.Order[0].energyR,Pie.Order[ipi].energy);
       }
     }
-    Histo->csiPie->Fill(id_csi,Pie.Order[0].strip);
   }
 
   int NsiHits = min(Pie.Nstore,Ring.Nstore);
@@ -251,7 +211,8 @@ void ringCounter::analysis(s800_results S800_results, elist Pie, elist Ring, eli
 
   for(int i = 0; i < Nsolution; i++) {
     int icsi = Solution[i].icsi;
-    if(icsi >=0) Histo->dee[icsi]->Fill(Solution[i].energyR,Solution[i].denergy);
+    int itele = Solution[i].itele;
+    if(icsi >=0) Histo->dee[itele][icsi]->Fill(Solution[i].energyR,Solution[i].denergy);
 //    if(icsi >=0 && S800_results.trig_coin) Histo->dee_S800[icsi]->Fill(Solution[i].energyR,Solution[i].denergy);
   }
 
@@ -259,7 +220,7 @@ void ringCounter::analysis(s800_results S800_results, elist Pie, elist Ring, eli
   getMomentum();
 }
 
-//***************************************************
+//***************************************************//
 //extracts multiple particle from strip data
 int ringCounter::multiHit(elist *Pie, elist *Ring) {
   int Ntries = min(Ring->Nstore,Pie->Nstore);
@@ -291,6 +252,7 @@ int ringCounter::multiHit(elist *Pie, elist *Ring) {
       Solution[i].denergy = pie_energy;
       Solution[i].iRing = Ring->Order[i].strip;
       Solution[i].iPie= Pie->Order[arrayB[i]].strip;
+      Solution[i].itele= Pie->Order[arrayB[i]].tele;
     }
     Nsolution = NestDim;
     break;
@@ -304,7 +266,7 @@ int ringCounter::multiHit(elist *Pie, elist *Ring) {
   return Nsolution;
 }
 
-//***************************************************
+//***************************************************//
 //recursive subroutine  used for multihit subroutine
 void ringCounter::loop(int depth, elist *Pie, elist *Ring) {
   if (depth == NestDim ) {
@@ -339,7 +301,7 @@ void ringCounter::loop(int depth, elist *Pie, elist *Ring) {
     loop(depth+1, Pie, Ring);
   }
 }
-//********************************************
+//********************************************//
 ringCounter::~ringCounter() {
   delete losses;
   delete losses_Al;
@@ -348,8 +310,16 @@ ringCounter::~ringCounter() {
 }
 
 
-//********************************
 int ringCounter::matchWithCsi(elist *Csi){
+  if(sidet == "S4") return matchWithS4Csi(Csi);
+  else if(sidet == "HIRA") return matchWithHIRACsi(Csi);
+  else {
+    cout << "No SI Match Found" << endl;
+    return 0;
+  }
+}
+//*********************************************//
+int ringCounter::matchWithS4Csi(elist *Csi){
   multProton = 0;
   multAlpha = 0;
   multDeuteron = 0;
@@ -402,20 +372,106 @@ int ringCounter::matchWithCsi(elist *Csi){
         found = true;
         Nfound++;
         Nmatched++;
-        bool FoundPid = Pid[Csi->Order[icsi].strip]->getPID(Solution[i].energyR, Solution[i].denergy);
+        bool FoundPid = Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->getPID(Solution[i].energyR, Solution[i].denergy);
         float x = Solution[i].theta*cos(Solution[i].phi)*180./acos(-1.);
         float y = Solution[i].theta*sin(Solution[i].phi)*180./acos(-1.);
         if(!FoundPid) continue;
-        int Z = Pid[Csi->Order[icsi].strip]->Z;
-        int A = Pid[Csi->Order[icsi].strip]->A;
-        if (Pid[Csi->Order[icsi].strip]->Z == 1 && Pid[Csi->Order[icsi].strip]->A == 1) {
+        int Z = Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->Z;
+        int A = Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->A;
+        if (Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->Z == 1 && Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->A == 1) {
           proton_present = true;
           multProton++;
           Solution[i].ipid = 1;
           Histo->protonHitMap->Fill(x,y);
-        } else if (Pid[Csi->Order[icsi].strip]->Z == 2 && Pid[Csi->Order[icsi].strip]->A == 4){
+        } else if (Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->Z == 2 && Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->A == 4){
    	  multAlpha++;
-	} else if (Pid[Csi->Order[icsi].strip]->Z == 1 && Pid[Csi->Order[icsi].strip]->A == 2) {
+	} else if (Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->Z == 1 && Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->A == 2) {
+	  multDeuteron++;
+        }
+	csical(icsi,i,Csi);
+	float sumEnergy = Solution[i].denergy + Solution[i].energy; //Si + CsI in MeV
+        if(1) {
+          //calculate energy lost in Al plate
+	  float Althick = AlThickness/cos(Solution[i].theta); //602.1 mg/cm2 Al plate (2.23 mm)
+	  float Ebeforetarget = losses_Al->getEin(sumEnergy,Althick,Z,A);
+	  sumEnergy = Ebeforetarget;
+	  //Calculate the energy lost in the target
+	  float thick = TargetThickness/2./cos(Solution[i].theta); //0.540 mm Be target -> 99.79 mg/cm2
+	  float ein = losses->getEin(sumEnergy,thick,Z,A);
+	  Solution[i].Ekin = ein;
+	  Solution[i].iZ = Z;
+	  Solution[i].iA = A;
+	  Solution[i].mass = Masses->GetMass(Z,A);
+	}
+      } //csi match if
+    } //loop over Csi
+    if (Nfound > 1) {
+      return 0;
+    }
+    Histo->SiMap->Fill(Solution[i].pos.X(),Solution[i].pos.Y());
+    // this can happen if pie is close to edge of
+    //CSI and two Csi fired, possibly a particle went in one and then
+    //out the other. we are going to reject such events for now
+  }//loop over solutions
+  return Nmatched;
+}
+
+//********************************
+int ringCounter::matchWithHIRACsi(elist *Csi){
+  multProton = 0;
+  multAlpha = 0;
+  multDeuteron = 0;
+  // match Si and Csi
+  int Nmatched = 0;
+  for (int i = 0; i < Nsolution; i++) {
+// !!!!KYLE!!!! Check Order of Pie ring (front vs back)
+    double theta = Telescope->getTheta(Solution[i].itele, Solution[i].iRing, Solution[i].iPie);
+    double phi = Telescope->phiRecon;
+    double mag = Telescope->r;
+
+    Solution[i].theta = theta;
+    Solution[i].phi = phi;
+    Solution[i].pos.SetMagThetaPhi(mag,theta,phi);
+    int id_csi;
+
+// !!!!KYLE!!!! Check definitions of CsI crystal number
+    if(Solution[i].iPie <= 16 && Solution[i].iPie >= 0) {
+      if(Solution[i].iRing <= 16 && Solution[i].iRing >= 0) {
+        id_csi = 0;
+      } else {
+        id_csi = 1;
+      }
+    } else if(Solution[i].iPie <= 31 && Solution[i].iPie >= 15) {
+      if(Solution[i].iRing <= 16 && Solution[i].iRing >= 0) {
+        id_csi = 2;
+      } else {
+        id_csi = 3;
+      }
+    }
+    bool found = false;
+    int Nfound = 0;
+    for (int icsi = 0;icsi<Csi->Nstore;icsi++) {
+      Solution[i].ipid = 0;
+      if (Csi->Order[icsi].strip == id_csi && Csi->Order[icsi].tele == Solution[i].itele ) {
+        Solution[i].energyR = Csi->Order[icsi].energyR;
+        Solution[i].icsi = Csi->Order[icsi].strip;
+        found = true;
+        Nfound++;
+        Nmatched++;
+        bool FoundPid = Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->getPID(Solution[i].energyR, Solution[i].denergy);
+        float x = Solution[i].theta*cos(Solution[i].phi)*180./acos(-1.);
+        float y = Solution[i].theta*sin(Solution[i].phi)*180./acos(-1.);
+        if(!FoundPid) continue;
+        int Z = Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->Z;
+        int A = Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->A;
+        if (Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->Z == 1 && Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->A == 1) {
+          proton_present = true;
+          multProton++;
+          Solution[i].ipid = 1;
+          Histo->protonHitMap->Fill(x,y);
+        } else if (Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->Z == 2 && Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->A == 4){
+   	  multAlpha++;
+	} else if (Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->Z == 1 && Pid[Csi->Order[icsi].tele][Csi->Order[icsi].strip]->A == 2) {
 	  multDeuteron++;
         }
 
@@ -439,53 +495,12 @@ int ringCounter::matchWithCsi(elist *Csi){
     if (Nfound > 1) {
       return 0;
     }
-//    cout << Solution[i].pos.X() << "\t" << Solution[i].pos.Y() << endl;
-    Histo->S4Map->Fill(Solution[i].pos.X(),Solution[i].pos.Y());
+    Histo->SiMap->Fill(Solution[i].pos.X(),Solution[i].pos.Y());
     // this can happen if pie is close to edge of
     //CSI and two Csi fired, possibly a particle went in one and then
     //out the other. we are going to reject such events for now
   }//loop over solutions
-  int sicsi = 1;
-  if(Nsolution != Nmatched) sicsi = 0;
-  Histo->S4CsI->Fill(sicsi);
   return Nmatched;
-}
-
-
-void ringCounter::match(elist *Pie, elist *Ring, elist *Csi){
-
-  if (Pie->Nstore == 0 && Ring->Nstore == 0 && Csi->Nstore == 0) return;
-  //find possible Csi detectors which are behind hit pie sectors
-  int Csi_NumberPossiblePies[Ncsi]={0};
-  int Csi_pies[Ncsi][Npie];
-  int Nsolutions = 0;
-  for (int ipie = 0; ipie < Pie->Nstore; ipie++) {
-    PieCsiMap[Pie->Order[ipie].strip].NcsiThere = 0;
-    for (int icsi_possible = 0; icsi_possible < PieCsiMap[ipie].N; icsi_possible++) {
-      PieCsiMap[ipie].there[icsi_possible] = false;
-      for (int icsi_det = 0; icsi_det < Csi->Nstore; icsi_det++) {
-        if (Csi->Order[icsi_det].strip == PieCsiMap[Pie->Order[ipie].strip].csi[icsi_possible]) {
-          PieCsiMap[Pie->Order[ipie].strip].NcsiThere++;
-	  PieCsiMap[Pie->Order[ipie].strip].there[icsi_possible] = true;
-	  Nsolutions++;
-	  Csi_NumberPossiblePies[icsi_det]++;
-	  Csi_pies[icsi_det][Csi_NumberPossiblePies[icsi_det]] = ipie;
-	}
-      }
-    }
-  }
-
-  if (Nsolutions == 0) return; // no possible Pie Csi match-ups
-  //do any CSI have more than one possible Pie associated with it
-  int Nproblems = 0;
-  for (int icsi = 0; icsi < Ncsi; icsi++) {
-    if (Csi_NumberPossiblePies[icsi] == 1) {
-      int ipie = Csi_pies[icsi][0];
-    }
-    if (Csi_NumberPossiblePies[icsi] > 1) {
-      Nproblems++;
-    }
-  }
 }
 
 void ringCounter::getMomentum() {
@@ -512,24 +527,23 @@ void ringCounter::getMomentum() {
 
 void ringCounter::csical(int icsi1, int i2, elist *Csi) {
   int iCsi = Csi->Order[icsi1].strip;
+  int iTele = Csi->Order[icsi1].tele;
   //Everything is treated as a proton by default
   //energies is changed for known particles
-  float energy = calProton->getEnergy(0,iCsi,Csi->Order[icsi1].energyR);
+  float energy = calProton->getEnergy(iTele,iCsi,Csi->Order[icsi1].energyR);
 
-  if (Pid[iCsi]->Z == 1  && Pid[iCsi]->A == 1) {
-    Histo->p_ECsI_theta[iCsi]->Fill(Solution[i2].theta,Solution[i2].energyR);
-
-    Histo->p_ECsI_thetaCal[iCsi]->Fill(Solution[i2].theta,energy);
-
-    Histo->p_ECsI_phi[iCsi]->Fill(Solution[i2].phi,Solution[i2].energyR);
-    Histo->p_ECsI_ring[iCsi]->Fill(Solution[i2].iRing,Solution[i2].energyR);
-  } else if(Pid[iCsi]->Z == 1 && Pid[iCsi]->A == 2) {
-    energy = calDeuteron->getEnergy(0,iCsi,Csi->Order[icsi1].energyR);
-  } else if (Pid[iCsi]->Z == 2 && Pid[iCsi]->A == 4) {
-    energy = calAlpha->getEnergy(0,iCsi,Csi->Order[icsi1].energyR);
-    Histo->alpha_ECsI_theta[iCsi]->Fill(Solution[i2].theta,Solution[i2].energyR);
-    Histo->alpha_ECsI_phi[iCsi]->Fill(Solution[i2].phi,Solution[i2].energyR);
-    Histo->alpha_ECsI_ring[iCsi]->Fill(Solution[i2].iRing, Solution[i2].energyR);
+  if (Pid[iTele][iCsi]->Z == 1  && Pid[iTele][iCsi]->A == 1) {
+    Histo->p_ECsI_theta[iTele][iCsi]->Fill(Solution[i2].theta,Solution[i2].energyR);
+    Histo->p_ECsI_thetaCal[iTele][iCsi]->Fill(Solution[i2].theta,energy);
+    Histo->p_ECsI_phi[iTele][iCsi]->Fill(Solution[i2].phi,Solution[i2].energyR);
+    Histo->p_ECsI_ring[iTele][iCsi]->Fill(Solution[i2].iRing,Solution[i2].energyR);
+  } else if(Pid[iTele][iCsi]->Z == 1 && Pid[iTele][iCsi]->A == 2) {
+    energy = calDeuteron->getEnergy(iTele,iCsi,Csi->Order[icsi1].energyR);
+  } else if (Pid[iTele][iCsi]->Z == 2 && Pid[iTele][iCsi]->A == 4) {
+    energy = calAlpha->getEnergy(iTele,iCsi,Csi->Order[icsi1].energyR);
+    Histo->alpha_ECsI_theta[iTele][iCsi]->Fill(Solution[i2].theta,Solution[i2].energyR);
+    Histo->alpha_ECsI_phi[iTele][iCsi]->Fill(Solution[i2].phi,Solution[i2].energyR);
+    Histo->alpha_ECsI_ring[iTele][iCsi]->Fill(Solution[i2].iRing, Solution[i2].energyR);
   }
   Solution[i2].energy = energy;
 }

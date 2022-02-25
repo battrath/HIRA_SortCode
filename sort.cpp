@@ -57,10 +57,19 @@ bool loadOptions(runOptions *opt, string infile) {
     if(OPT == "S4RINGMAP") opt->ringmap = VALUE;
     if(OPT == "S4PIECAL") opt->piecal = VALUE;
     if(OPT == "S4RINGCAL") opt->ringcal = VALUE;
+    if(OPT == "CSIMAP") opt->csimap = VALUE;
     if(OPT == "CRDCPED") opt->crdcped = VALUE;
     if(OPT == "CRDCPAR") opt->crdcpar = VALUE;
     if(OPT == "CRDCCAL") opt->crdccal = VALUE;
     if(OPT == "MASSFILE") opt->massfile = VALUE;
+    if(OPT == "SIDET") opt->sidet = VALUE;
+    if(OPT == "XACT") opt->xact = stof(VALUE);
+    if(OPT == "YACT") opt->yact = stof(VALUE);
+    if(OPT == "TELEGEO") opt->telegeo = VALUE;
+    if(OPT == "NTELE") opt->ntele = stoi(VALUE);
+    if(OPT == "NPIE") opt->npie = stoi(VALUE);
+    if(OPT == "NRING") opt->nring = stoi(VALUE);
+    if(OPT == "NCSI") opt->ncsi = stoi(VALUE);
   }
   fp.close();
   fp.clear();
@@ -136,7 +145,7 @@ int main(int argc, char* argv[]) {
 
   readBeam * beams = new readBeam();
   readMass * masses = new readMass(opt->massfile);
-  histo_sort * Histo_sort = new histo_sort(beams, sortfile);
+  histo_sort * Histo_sort = new histo_sort(beams, sortfile, opt);
   histo_read * Histo_read = new histo_read(beams, readfile);
 
   //forest * Forest = new forest();
