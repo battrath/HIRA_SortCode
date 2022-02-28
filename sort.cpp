@@ -58,6 +58,7 @@ bool loadOptions(runOptions *opt, string infile) {
     if(OPT == "S4PIECAL") opt->piecal = VALUE;
     if(OPT == "S4RINGCAL") opt->ringcal = VALUE;
     if(OPT == "CSIMAP") opt->csimap = VALUE;
+    if(OPT == "CSITDCMAP") opt->csitdcmap = VALUE;
     if(OPT == "CRDCPED") opt->crdcped = VALUE;
     if(OPT == "CRDCPAR") opt->crdcpar = VALUE;
     if(OPT == "CRDCCAL") opt->crdccal = VALUE;

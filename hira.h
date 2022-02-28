@@ -72,6 +72,7 @@ class hira {
   string RingCal;
   string PieCal;
   string CsIChMap;
+  string CsIChTDCMap;
   string ProtonCal;
   float dist2Si;
   int Ntele;
@@ -87,6 +88,8 @@ class hira {
   int PieTeleMap[4][32];
   int CsIMap[60];
   int CsITeleMap[60];
+  int CsITDCMap[60];
+  int CsITDCTeleMap[60];
 
   unsigned short chanXLM[3][400];
   unsigned short nXLM[3];

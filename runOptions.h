@@ -25,6 +25,7 @@ struct runOptions {
   string ringmap;	//S4 Ring Chip map
   string ringcal;	//S4 Ring Calibrations
   string csimap;	//CsI Map
+  string csitdcmap;	//CsI TDC Map
   string crdcped;	//CRDC Pedestal File
   string crdcpar;	//CRDC Charge Calibrations
   string crdccal;	//CRDC Calibrations

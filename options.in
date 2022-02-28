@@ -18,6 +18,7 @@ CSITIME		cal/csiTime.gate
 S4PIEMAP	datfiles/S4Pies.txt
 S4RINGMAP	datfiles/S4Rings_new.txt
 CSIMAP		datfiles/CsIMap.dat
+CSITDCMAP	datfiles/CsITDCMap.dat
 S4PIECAL	cal/Pies_new.cal
 S4RINGCAL	cal/Rings_SG.cal
 CRDCPED		datfiles/CRDCPedestals.dat

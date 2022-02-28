@@ -23,6 +23,7 @@ hira::hira(TRandom * ran0, histo_sort * Histo0, histo_read * Histo1, runOptions 
   S4RingMap = opt->ringmap;
   S4PieMap = opt->piemap;
   CsIChMap = opt->csimap;
+  CsIChTDCMap = opt->csitdcmap;
   RingCal = opt->ringcal;
   PieCal = opt->piecal;
   ProtonCal = opt->pcal;
@@ -88,6 +89,24 @@ void hira::init() {
   }
   ifile3.close();
   ifile3.clear();
+
+
+  ifstream ifile4(CsIChTDCMap.c_str());
+  if (!ifile4.is_open()) {
+    cout << "CsI TDC map not found" << endl;
+    abort();
+  }
+  getline(ifile4, name);
+  for (;;) {
+    ifile4 >> Ch >> iT >> iC;
+    if (ifile4.eof()) break;
+    if (ifile4.bad()) break;
+    CsITDCMap[Ch] = iC;
+    CsITDCTeleMap[Ch] = iT;
+  }
+  ifile4.close();
+  ifile4.clear();
+
 
   //read in calibrations
 
@@ -275,7 +294,7 @@ bool hira::unpackCsi(unsigned short * & point, int runno) {
     for (int i = 0; i < TDC->Ndata; i++) {
       int id = TDC->dataOut[i].channel;
       int itime = TDC->dataOut[i].time;
-      int itele = 0;
+      int itele = CsITDCTeleMap[id];
       if (id < 20) {
 //KYLE!!! How to give TDC a Telescope Number?
         DataT[NT].id = id;

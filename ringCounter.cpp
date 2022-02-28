@@ -33,10 +33,6 @@ ringCounter::ringCounter(TRandom * ran0, histo_sort * Histo1, readMass * Masses0
   for(int i = 0; i < Ntele; i++) {
     for (int j = 0; j <Ncsi; j++) {
       Pid[i][j] = new pid(Form("CsIpidT%i_%i", i, j));
-//    outstring.str("");
-//    outstring << "CsIpid"<<i;
-//    name = outstring.str();
-//    Pid[i][j] = new pid(name);
     }
   }
 
